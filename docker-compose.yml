@@ -1,0 +1,66 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  # MySQL服务
+  mysql:
+    image: mysql:8.0
+    container_name: 3d-ai-mysql
+    restart: always
+    ports:
+      - "3308:3306"  # 保持端口不变，适配团队开发
+    environment:
+      MYSQL_ROOT_PASSWORD: 3dai2026  # 团队通用密码
+      MYSQL_DATABASE: 3d_ai_platform
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 3dai2026
+      MYSQL_INITDB_SKIP_TZINFO: 1
+      MYSQL_AUTH_PLUGIN: mysql_native_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - 3d-ai-network
+
+  # MongoDB服务
+  mongodb:
+    image: mongo:5.0
+    container_name: 3d-ai-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: 3dai2026  # 团队通用密码
+      MONGO_INITDB_DATABASE: 3d_ai_metadata
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - 3d-ai-network
+
+  # MinIO服务
+  minio:
+    image: minio/minio
+    container_name: 3d-ai-minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: 3dai2026  # 团队通用密码
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - 3d-ai-network
+
+# 数据卷：持久化存储
+volumes:
+  mysql_data:
+  mongodb_data:
+  minio_data:
+
+# 自定义网络：隔离服务
+networks:
+  3d-ai-network:
+    driver: bridge
