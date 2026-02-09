@@ -1,0 +1,63 @@
+﻿# IDE 与编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# 日志与临时文件
+*.log
+*.tmp
+*.temp
+
+# 依赖目录
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 环境配置文件
+.env
+.env.local
+.env.development
+.env.production
+
+# 密钥与证书
+*.pem
+*.key
+*.pfx
+*.p12
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 构建与打包产物
+dist/
+build/
+out/
+target/
+
+# 3D 模型临时文件
+*.blend
+*.blend1
+*.blend2
+*.fbx.temp
+*.obj.temp
+*.gltf.temp
+
+# Docker 与临时数据
+docker-data/
+tmp/
+
+# 本地运行缓存
+*.lock
+package-lock.json
+yarn.lock
