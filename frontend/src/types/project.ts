@@ -19,6 +19,8 @@ export interface Project {
   description: string | null
   user_id: number
   status: 'draft' | 'processing' | 'completed' | 'archived'
+  is_public: boolean
+  allow_download: boolean
   model_data: ModelData
   storage_paths: StoragePaths
   created_at: string
@@ -60,4 +62,44 @@ export const ProjectStatusMap: Record<string, { label: string; type: string }> =
   processing: { label: '处理中', type: 'warning' },
   completed: { label: '已完成', type: 'success' },
   archived: { label: '已归档', type: 'info' }
+}
+
+// 评论相关类型
+export interface Comment {
+  id: number
+  user_id: number
+  project_id: number
+  content: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CommentCreateRequest {
+  content: string
+}
+
+// 点赞相关类型
+export interface LikeResponse {
+  message: string
+  liked: boolean
+}
+
+// 收藏相关类型
+export interface FavoriteResponse {
+  message: string
+  favorited: boolean
+}
+
+// 下载相关类型
+export interface DownloadResponse {
+  message: string
+  project_id: number
+  name: string
+}
+
+// 发布相关类型
+export interface PublishResponse {
+  message: string
+  is_public: boolean
+  allow_download: boolean
 }

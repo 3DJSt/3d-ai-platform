@@ -10,6 +10,8 @@ import ProfileView from '../views/ProfileView.vue'
 import ProfileSetupView from '../views/ProfileSetupView.vue'
 import LibraryView from '../views/LibraryView.vue'
 import ProjectDetailView from '../views/ProjectDetailView.vue'
+import GalleryView from '../views/GalleryView.vue'
+import GalleryProjectDetailView from '../views/GalleryProjectDetailView.vue'
 import NotFound from '../views/NotFound.vue'
 
 // Admin
@@ -80,6 +82,16 @@ const router = createRouter({
       name: 'project-detail',
       component: ProjectDetailView,
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/gallery',
+      name: 'gallery',
+      component: GalleryView,
+    },
+    {
+      path: '/gallery/project/:id',
+      name: 'gallery-project-detail',
+      component: GalleryProjectDetailView,
     },
     // Admin routes
     {
