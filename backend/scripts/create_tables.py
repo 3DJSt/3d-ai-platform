@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.db.base import Base
 from app.db.session import engine
-from app.models import user, project
+from app.models import user, project, interaction
 
 def create_tables():
     print("Creating database tables...")

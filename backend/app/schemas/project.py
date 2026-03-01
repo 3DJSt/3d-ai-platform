@@ -27,6 +27,11 @@ class ProjectResponse(ProjectBase):
     status: str
     model_data: Dict[str, Any]
     storage_paths: Dict[str, Any]
+    is_public: bool
+    thumbnail_url: Optional[str]
+    view_count: int
+    like_count: int
+    tags: List[str]
     created_at: datetime
     updated_at: datetime
 
@@ -60,5 +65,57 @@ class CommentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    class Config:
+        from_attributes = True
+class GalleryAuthorInfo(BaseModel):
+    id: int
+    username: str
+    avatar_url: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+
+class GalleryProjectResponse(BaseModel):
+    id: int
+    name: str
+    description: Optional[str]
+    thumbnail_url: Optional[str]
+    author: GalleryAuthorInfo
+    view_count: int
+    like_count: int
+    comment_count: int = 0
+    favorite_count: int = 0
+    tags: List[str]
+    created_at: datetime
+    status: str
+
+    class Config:
+        from_attributes = True
+
+
+class GalleryListResponse(BaseModel):
+    items: List[GalleryProjectResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+class GalleryProjectDetail(BaseModel):
+    id: int
+    name: str
+    description: Optional[str]
+    thumbnail_url: Optional[str]
+    author: GalleryAuthorInfo
+    view_count: int
+    like_count: int
+    comment_count: int = 0
+    favorite_count: int = 0
+    tags: List[str]
+    model_data: Dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+    status: str
+    
     class Config:
         from_attributes = True

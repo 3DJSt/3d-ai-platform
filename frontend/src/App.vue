@@ -1,21 +1,26 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { RouterView } from 'vue-router'
+import AppHeader from '@/components/AppHeader.vue'
+</script>
 
 <template>
-  <div id="app">
-    <router-view />
+  <div class="app">
+    <AppHeader />
+    <main class="main-content">
+      <RouterView />
+    </main>
   </div>
 </template>
 
-<script setup lang="ts">
-</script>
-
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+<style scoped>
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+.main-content {
+  flex: 1;
+  padding: 20px 0;
 }
 </style>

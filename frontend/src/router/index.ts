@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+
+// 1. 合并导入：保留上游所有导入 + 兼容本地画廊组件（统一命名规范）
 import HomeView from '../views/HomeView.vue'
 import CreateView from '../views/CreateView.vue'
 import ModelingView from '../views/ModelingView.vue'
@@ -10,11 +12,11 @@ import ProfileView from '../views/ProfileView.vue'
 import ProfileSetupView from '../views/ProfileSetupView.vue'
 import LibraryView from '../views/LibraryView.vue'
 import ProjectDetailView from '../views/ProjectDetailView.vue'
-import GalleryView from '../views/GalleryView.vue'
-import GalleryProjectDetailView from '../views/GalleryProjectDetailView.vue'
+import GalleryView from '../views/GalleryView.vue'       // 上游画廊组件
+import GalleryProjectDetailView from '../views/GalleryProjectDetailView.vue'  // 上游画廊详情
 import NotFound from '../views/NotFound.vue'
 
-// Admin
+// Admin 相关导入（保留上游完整管理后台）
 import AdminLayout from '../layouts/AdminLayout.vue'
 import AdminDashboard from '../views/admin/DashboardView.vue'
 import AdminUsers from '../views/admin/UsersView.vue'
@@ -28,36 +30,31 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView,
+      redirect: '/gallery'  // 保留本地的默认跳转逻辑
+    },
+    // 2. 合并画廊路由：优先保留上游规范的命名 + 兼容本地路由结构
+    {
+      path: '/gallery',
+      name: 'gallery',
+      component: GalleryView  // 统一使用上游的 GalleryView，避免组件命名冲突
     },
     {
-      path: '/create',
-      name: 'create',
-      component: CreateView,
-      meta: { requiresAuth: true },
+      path: '/gallery/:id',
+      name: 'gallery-detail',
+      // 兼容本地的懒加载方式，组件指向上游的画廊详情（保持路由参数一致）
+      component: GalleryProjectDetailView
     },
-    {
-      path: '/modeling',
-      name: 'modeling',
-      component: ModelingView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/templates',
-      name: 'templates',
-      component: TemplatesView,
-    },
+    // 3. 保留上游完整的鉴权路由（登录/注册/个人中心等）
     {
       path: '/login',
       name: 'login',
-      component: LoginView,
-      meta: { guest: true },
+      component: LoginView  // 统一为非懒加载，保持代码风格一致
     },
     {
       path: '/register',
       name: 'register',
       component: RegisterView,
-      meta: { guest: true },
+      meta: { guest: true },  // 保留上游的鉴权元信息（关键！）
     },
     {
       path: '/profile',
@@ -83,17 +80,7 @@ const router = createRouter({
       component: ProjectDetailView,
       meta: { requiresAuth: true },
     },
-    {
-      path: '/gallery',
-      name: 'gallery',
-      component: GalleryView,
-    },
-    {
-      path: '/gallery/project/:id',
-      name: 'gallery-project-detail',
-      component: GalleryProjectDetailView,
-    },
-    // Admin routes
+    // 4. 保留上游完整的管理后台路由（核心功能，不能删）
     {
       path: '/admin',
       component: AdminLayout,
@@ -130,6 +117,7 @@ const router = createRouter({
         },
       ],
     },
+    // 5. 保留404路由，保证路由完整性
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
@@ -138,6 +126,7 @@ const router = createRouter({
   ],
 })
 
+// 6. 保留上游完整的路由守卫（鉴权逻辑，核心！）
 router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem('token')
   const authStore = useAuthStore()

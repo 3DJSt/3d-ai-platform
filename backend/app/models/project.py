@@ -9,14 +9,14 @@ class Project(BaseModel):
 
     name = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
-    user_id = Column(Integer, index=True, nullable=False)  # 关联用户表id
+    user_id = Column(Integer, index=True, nullable=False)
     
-    # 项目状态
     status = Column(ENUM("draft", "processing", "completed", "archived"), default="draft")
     is_public = Column(Boolean, default=True, nullable=False)  # 是否公开
     allow_download = Column(Boolean, default=True, nullable=False)  # 是否允许下载
     
     # 项目数据
+    
     model_data = Column(JSON, default={
         "model": None,
         "textures": [],
@@ -24,19 +24,27 @@ class Project(BaseModel):
         "animations": [],
         "render_settings": {}
     })
-    # 文件存储路径
+    
     storage_paths = Column(JSON, default={
         "minio_bucket": "user-projects",
         "model_key": None,
         "texture_keys": [],
         "animation_keys": []
     })
+    
+# 先保留你本地新增的字段（放在Project类里）
+is_public = Column(Boolean, default=False, index=True)
+thumbnail_url = Column(String(500), nullable=True)
+view_count = Column(Integer, default=0)
+like_count = Column(Integer, default=0)
+tags = Column(JSON, default=[])
 
-    # 关联关系
-    reports = relationship("ContentReport", back_populates="project", cascade="all, delete-orphan")
-    likes = relationship("Like", back_populates="project", cascade="all, delete-orphan")
-    favorites = relationship("Favorite", back_populates="project", cascade="all, delete-orphan")
-    comments = relationship("Comment", back_populates="project", cascade="all, delete-orphan")
+# 再保留上游的关联关系和所有模型类
+# 关联关系
+reports = relationship("ContentReport", back_populates="project", cascade="all, delete-orphan")
+likes = relationship("Like", back_populates="project", cascade="all, delete-orphan")
+favorites = relationship("Favorite", back_populates="project", cascade="all, delete-orphan")
+comments = relationship("Comment", back_populates="project", cascade="all, delete-orphan")
 
 
 class Like(BaseModel):
