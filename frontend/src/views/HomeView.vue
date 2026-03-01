@@ -6,6 +6,9 @@
       <div class="cta-buttons">
         <router-link to="/create" class="btn-primary">开始创作</router-link>
         <router-link to="/templates" class="btn-secondary">浏览模板</router-link>
+        <router-link to="/library" class="btn-library">
+          <span class="btn-icon">📁</span>我的项目库
+        </router-link>
       </div>
     </div>
 
@@ -27,10 +30,10 @@
           <h3>多格式导出</h3>
           <p>支持多种3D模型格式导出</p>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon">☁️</div>
-          <h3>云端存储</h3>
-          <p>项目自动保存到云端</p>
+        <div class="feature-card" @click="$router.push('/library')">
+          <div class="feature-icon">📁</div>
+          <h3>项目管理</h3>
+          <p>管理您的所有3D项目</p>
         </div>
       </div>
     </div>
@@ -98,7 +101,7 @@
   flex-wrap: wrap;
 }
 
-.btn-primary, .btn-secondary {
+.btn-primary, .btn-secondary, .btn-library {
   padding: 15px 30px;
   border-radius: 30px;
   text-decoration: none;
@@ -127,6 +130,25 @@
   color: #667eea;
 }
 
+.btn-library {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-library:hover {
+  background: white;
+  color: #667eea;
+  border-color: white;
+}
+
+.btn-icon {
+  font-size: 1.2rem;
+}
+
 .features-section {
   padding: 80px 20px;
   background: white;
@@ -153,11 +175,12 @@
   padding: 40px 30px;
   border-radius: 15px;
   background: #f8f9fa;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .feature-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
 .feature-icon {

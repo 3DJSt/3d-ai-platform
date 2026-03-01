@@ -8,6 +8,15 @@ from app.schemas.user import (
     TokenData,
     PasswordChange,
 )
+from app.schemas.project import (
+    ProjectBase,
+    ProjectCreate,
+    ProjectUpdate,
+    ProjectStatusUpdate,
+    ProjectResponse,
+    ProjectListResponse,
+    ProjectFilter,
+)
 
 __all__ = [
     "UserBase",
@@ -18,4 +27,11 @@ __all__ = [
     "Token",
     "TokenData",
     "PasswordChange",
+    "ProjectBase",
+    "ProjectCreate",
+    "ProjectUpdate",
+    "ProjectStatusUpdate",
+    "ProjectResponse",
+    "ProjectListResponse",
+    "ProjectFilter",
 ]
