@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, JSON
+from sqlalchemy import Column, String, Text, JSON, Integer
 from sqlalchemy.dialects.mysql import ENUM
 from app.db.base import BaseModel
 

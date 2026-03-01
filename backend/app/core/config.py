@@ -1,5 +1,5 @@
+from typing import Optional
 from pydantic_settings import BaseSettings
-from pydantic import Optional
 
 class Settings(BaseSettings):
     # 项目配置
