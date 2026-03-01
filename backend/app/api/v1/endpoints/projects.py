@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, List
 from app.db.session import get_db
-from app.models.project import Project
+from app.models.project import Project, Like, Favorite, Comment
 from app.models.user import User
 from app.schemas.project import (
     ProjectCreate,
@@ -10,6 +10,8 @@ from app.schemas.project import (
     ProjectStatusUpdate,
     ProjectResponse,
     ProjectListResponse,
+    CommentCreate,
+    CommentResponse,
 )
 from app.core.security import get_current_user, require_admin
 
@@ -274,3 +276,239 @@ async def duplicate_project(
     db.refresh(new_project)
     
     return new_project
+
+
+# ========== 公共画廊接口 ==========
+
+@router.get("/public/list", response_model=ProjectListResponse)
+async def list_public_projects(
+    search: Optional[str] = Query(None, description="按名称搜索"),
+    sort_by: str = Query("created_at", description="排序字段"),
+    sort_order: str = Query("desc", description="排序方向"),
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(12, ge=1, le=100, description="每页数量"),
+    db: Session = Depends(get_db)
+):
+    """获取公共项目列表"""
+    query = db.query(Project).filter(Project.is_public == True, Project.status == "completed")
+    
+    # 名称搜索
+    if search:
+        query = query.filter(Project.name.contains(search))
+    
+    # 排序
+    if sort_order == "desc":
+        query = query.order_by(getattr(Project, sort_by).desc())
+    else:
+        query = query.order_by(getattr(Project, sort_by).asc())
+    
+    # 分页
+    total = query.count()
+    items = query.offset((page - 1) * page_size).limit(page_size).all()
+    
+    return ProjectListResponse(
+        items=items,
+        total=total,
+        page=page,
+        page_size=page_size
+    )
+
+
+@router.get("/public/{project_id}", response_model=ProjectResponse)
+async def get_public_project(
+    project_id: int,
+    db: Session = Depends(get_db)
+):
+    """获取公共项目详情"""
+    project = db.query(Project).filter(
+        Project.id == project_id,
+        Project.is_public == True,
+        Project.status == "completed"
+    ).first()
+    
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="项目不存在或未公开"
+        )
+    
+    return project
+
+
+@router.post("/{project_id}/like")
+async def toggle_like(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """点赞/取消点赞"""
+    # 检查项目是否存在
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="项目不存在"
+        )
+    
+    # 检查是否已点赞
+    existing_like = db.query(Like).filter(
+        Like.user_id == current_user.id,
+        Like.project_id == project_id
+    ).first()
+    
+    if existing_like:
+        # 取消点赞
+        db.delete(existing_like)
+        db.commit()
+        return {"message": "取消点赞成功", "liked": False}
+    else:
+        # 添加点赞
+        new_like = Like(user_id=current_user.id, project_id=project_id)
+        db.add(new_like)
+        db.commit()
+        return {"message": "点赞成功", "liked": True}
+
+
+@router.post("/{project_id}/favorite")
+async def toggle_favorite(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """收藏/取消收藏"""
+    # 检查项目是否存在
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="项目不存在"
+        )
+    
+    # 检查是否已收藏
+    existing_favorite = db.query(Favorite).filter(
+        Favorite.user_id == current_user.id,
+        Favorite.project_id == project_id
+    ).first()
+    
+    if existing_favorite:
+        # 取消收藏
+        db.delete(existing_favorite)
+        db.commit()
+        return {"message": "取消收藏成功", "favorited": False}
+    else:
+        # 添加收藏
+        new_favorite = Favorite(user_id=current_user.id, project_id=project_id)
+        db.add(new_favorite)
+        db.commit()
+        return {"message": "收藏成功", "favorited": True}
+
+
+@router.get("/{project_id}/comments", response_model=List[CommentResponse])
+async def get_project_comments(
+    project_id: int,
+    db: Session = Depends(get_db)
+):
+    """获取项目评论"""
+    # 检查项目是否存在
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="项目不存在"
+        )
+    
+    comments = db.query(Comment).filter(
+        Comment.project_id == project_id
+    ).order_by(Comment.created_at.desc()).all()
+    
+    return comments
+
+
+@router.post("/{project_id}/comments", response_model=CommentResponse)
+async def add_comment(
+    project_id: int,
+    comment_data: CommentCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """添加评论"""
+    # 检查项目是否存在
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="项目不存在"
+        )
+    
+    new_comment = Comment(
+        user_id=current_user.id,
+        project_id=project_id,
+        content=comment_data.content
+    )
+    
+    db.add(new_comment)
+    db.commit()
+    db.refresh(new_comment)
+    
+    return new_comment
+
+
+@router.get("/{project_id}/download")
+async def download_project(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """下载项目"""
+    # 检查项目是否存在
+    project = db.query(Project).filter(
+        Project.id == project_id,
+        (Project.user_id == current_user.id) | (Project.is_public == True)
+    ).first()
+    
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="项目不存在"
+        )
+    
+    # 检查是否允许下载
+    if not project.allow_download and project.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="该项目不允许下载"
+        )
+    
+    # 这里应该返回文件下载链接或文件内容
+    # 暂时返回项目信息
+    return {"message": "下载功能开发中", "project_id": project_id, "name": project.name}
+
+
+@router.put("/{project_id}/publish")
+async def publish_project(
+    project_id: int,
+    is_public: bool = Query(..., description="是否公开"),
+    allow_download: Optional[bool] = Query(None, description="是否允许下载"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """发布/取消发布项目"""
+    project = db.query(Project).filter(
+        Project.id == project_id,
+        Project.user_id == current_user.id
+    ).first()
+    
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="项目不存在"
+        )
+    
+    project.is_public = is_public
+    if allow_download is not None:
+        project.allow_download = allow_download
+    
+    db.commit()
+    db.refresh(project)
+    
+    return {"message": "发布状态更新成功", "is_public": project.is_public, "allow_download": project.allow_download}

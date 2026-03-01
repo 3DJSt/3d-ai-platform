@@ -5,7 +5,13 @@ import type {
   ProjectCreateRequest,
   ProjectUpdateRequest,
   ProjectStatusUpdateRequest,
-  ProjectFilterParams
+  ProjectFilterParams,
+  Comment,
+  CommentCreateRequest,
+  LikeResponse,
+  FavoriteResponse,
+  DownloadResponse,
+  PublishResponse
 } from '@/types/project'
 
 export const projectApi = {
@@ -42,6 +48,53 @@ export const projectApi = {
   // 复制项目
   duplicateProject(id: number) {
     return apiClient.post<Project>(`/projects/${id}/duplicate`)
+  },
+
+  // ========== 公共画廊接口 ==========
+
+  // 获取公共项目列表
+  getPublicProjects(params?: ProjectFilterParams) {
+    return apiClient.get<ProjectListResponse>('/projects/public/list', { params })
+  },
+
+  // 获取公共项目详情
+  getPublicProject(id: number) {
+    return apiClient.get<Project>(`/projects/public/${id}`)
+  },
+
+  // 点赞/取消点赞
+  toggleLike(id: number) {
+    return apiClient.post<LikeResponse>(`/projects/${id}/like`)
+  },
+
+  // 收藏/取消收藏
+  toggleFavorite(id: number) {
+    return apiClient.post<FavoriteResponse>(`/projects/${id}/favorite`)
+  },
+
+  // 获取项目评论
+  getProjectComments(id: number) {
+    return apiClient.get<Comment[]>(`/projects/${id}/comments`)
+  },
+
+  // 添加评论
+  addComment(id: number, data: CommentCreateRequest) {
+    return apiClient.post<Comment>(`/projects/${id}/comments`, data)
+  },
+
+  // 下载项目
+  downloadProject(id: number) {
+    return apiClient.get<DownloadResponse>(`/projects/${id}/download`)
+  },
+
+  // 发布/取消发布项目
+  publishProject(id: number, isPublic: boolean, allowDownload?: boolean) {
+    return apiClient.put<PublishResponse>(`/projects/${id}/publish`, null, {
+      params: {
+        is_public: isPublic,
+        allow_download: allowDownload
+      }
+    })
   }
 }
 

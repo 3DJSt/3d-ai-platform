@@ -1,14 +1,11 @@
 <template>
-  <div class="library-view">
+  <div class="gallery-view">
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
-        <h1 class="page-title">我的项目库</h1>
-        <p class="page-subtitle">管理和查看您的所有3D项目</p>
+        <h1 class="page-title">公共画廊</h1>
+        <p class="page-subtitle">浏览和探索社区创建的3D项目</p>
       </div>
-      <el-button type="primary" size="large" @click="handleCreate">
-        <el-icon><Plus /></el-icon>新建项目
-      </el-button>
     </div>
 
     <!-- 工具栏 -->
@@ -24,13 +21,6 @@
           <el-icon><Search /></el-icon>
         </template>
       </el-input>
-
-      <el-select v-model="filterStatus" placeholder="筛选状态" clearable @change="handleFilter">
-        <el-option label="草稿" value="draft" />
-        <el-option label="处理中" value="processing" />
-        <el-option label="已完成" value="completed" />
-        <el-option label="已归档" value="archived" />
-      </el-select>
 
       <el-select v-model="sortBy" placeholder="排序方式" @change="handleSort">
         <el-option label="最新创建" value="created_at" />
@@ -49,41 +39,38 @@
     </div>
 
     <!-- 项目列表 -->
-    <div v-loading="projectStore.loading" class="projects-container">
+    <div v-loading="galleryStore.loading" class="projects-container">
       <!-- 空状态 -->
       <el-empty
-        v-if="!projectStore.hasProjects && !projectStore.loading"
+        v-if="!galleryStore.hasProjects && !galleryStore.loading"
         description="暂无项目"
         :image-size="200"
       >
         <template #description>
           <div class="empty-content">
-            <p class="empty-title">还没有任何项目</p>
-            <p class="empty-desc">点击上方按钮创建您的第一个3D项目</p>
+            <p class="empty-title">还没有任何公共项目</p>
+            <p class="empty-desc">成为第一个分享您作品的人</p>
           </div>
         </template>
-        <el-button type="primary" @click="handleCreate">立即创建</el-button>
       </el-empty>
 
       <!-- 项目网格 -->
       <div v-else class="projects-grid">
         <ProjectCard
-          v-for="project in projectStore.projects"
+          v-for="project in galleryStore.projects"
           :key="project.id"
           :project="project"
-          :is-public="false"
-          @edit="handleEdit"
-          @delete="handleDeleteSuccess"
+          :is-public="true"
           @view="handleViewProject"
         />
       </div>
 
       <!-- 分页 -->
-      <div v-if="projectStore.total > 0" class="pagination-wrapper">
+      <div v-if="galleryStore.total > 0" class="pagination-wrapper">
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :total="projectStore.total"
+          :total="galleryStore.total"
           :page-sizes="[12, 24, 48]"
           layout="total, sizes, prev, pager, next"
           @size-change="handleSizeChange"
@@ -91,86 +78,49 @@
         />
       </div>
     </div>
-
-    <!-- 项目表单弹窗 -->
-    <ProjectForm
-      v-model="formVisible"
-      :project="editingProject"
-      @success="handleFormSuccess"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { Plus, Search, SortDown, SortUp } from '@element-plus/icons-vue'
+import { ref, onMounted } from 'vue'
+import { Search, SortDown, SortUp } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
 import ProjectCard from '@/components/library/ProjectCard.vue'
-import ProjectForm from '@/components/library/ProjectForm.vue'
-import { useProjectStore } from '@/stores/projects'
+import { useGalleryStore } from '@/stores/gallery'
 import type { Project } from '@/types/project'
 
-const projectStore = useProjectStore()
 const router = useRouter()
+const galleryStore = useGalleryStore()
 
-// 搜索和筛选状态
+// 搜索和排序状态
 const searchQuery = ref('')
-const filterStatus = ref('')
 const sortBy = ref('created_at')
 const sortOrder = ref<'asc' | 'desc'>('desc')
 const currentPage = ref(1)
 const pageSize = ref(12)
 
-// 表单状态
-const formVisible = ref(false)
-const editingProject = ref<Project | null>(null)
-
-// 加载项目列表
+// 加载公共项目列表
 const loadProjects = async () => {
   try {
-    await projectStore.fetchProjects({
+    await galleryStore.fetchPublicProjects({
       search: searchQuery.value || undefined,
-      status: filterStatus.value || undefined,
       sort_by: sortBy.value,
       sort_order: sortOrder.value,
       page: currentPage.value,
       page_size: pageSize.value
     })
   } catch (error) {
-    ElMessage.error('加载项目列表失败')
+    ElMessage.error('加载公共项目列表失败')
   }
 }
 
 // 事件处理
-const handleCreate = () => {
-  editingProject.value = null
-  formVisible.value = true
-}
-
-const handleEdit = (project: Project) => {
-  editingProject.value = project
-  formVisible.value = true
-}
-
-const handleFormSuccess = () => {
-  loadProjects()
-}
-
-const handleDeleteSuccess = () => {
-  loadProjects()
-}
-
 const handleViewProject = (project: Project) => {
-  router.push(`/library/project/${project.id}`)
+  router.push({ name: 'gallery-project-detail', params: { id: project.id } })
 }
 
 const handleSearch = () => {
-  currentPage.value = 1
-  loadProjects()
-}
-
-const handleFilter = () => {
   currentPage.value = 1
   loadProjects()
 }
@@ -190,11 +140,6 @@ const handleSizeChange = (size: number) => {
   loadProjects()
 }
 
-// 监听分页变化
-watch([currentPage, pageSize], () => {
-  projectStore.setPage(currentPage.value)
-})
-
 // 页面加载时获取数据
 onMounted(() => {
   loadProjects()
@@ -202,7 +147,7 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-.library-view {
+.gallery-view {
   padding: 24px;
   max-width: 1400px;
   margin: 0 auto;

@@ -27,3 +27,6 @@ class User(BaseModel):
 
     # 关联关系
     appeals = relationship("Appeal", foreign_keys="Appeal.user_id", back_populates="user")
+    likes = relationship("Like", back_populates="user", cascade="all, delete-orphan")
+    favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
+    comments = relationship("Comment", back_populates="user", cascade="all, delete-orphan")

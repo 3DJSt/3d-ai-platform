@@ -46,3 +46,19 @@ class ProjectFilter(BaseModel):
     search: Optional[str] = Field(None, description="按名称搜索")
     sort_by: Optional[str] = Field("created_at", description="排序字段")
     sort_order: Optional[str] = Field("desc", description="排序方向: asc/desc")
+
+
+class CommentCreate(BaseModel):
+    content: str = Field(..., min_length=1, max_length=1000, description="评论内容")
+
+
+class CommentResponse(BaseModel):
+    id: int
+    user_id: int
+    project_id: int
+    content: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

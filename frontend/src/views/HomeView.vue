@@ -6,6 +6,9 @@
       <div class="cta-buttons">
         <router-link to="/create" class="btn-primary">开始创作</router-link>
         <router-link to="/templates" class="btn-secondary">浏览模板</router-link>
+        <router-link to="/gallery" class="btn-gallery">
+          <span class="btn-icon">🎨</span>公共画廊
+        </router-link>
         <router-link to="/library" class="btn-library">
           <span class="btn-icon">📁</span>我的项目库
         </router-link>
@@ -104,7 +107,7 @@
   flex-wrap: wrap;
 }
 
-.btn-primary, .btn-secondary, .btn-library, .btn-profile {
+.btn-primary, .btn-secondary, .btn-gallery, .btn-library, .btn-profile {
   padding: 15px 30px;
   border-radius: 30px;
   text-decoration: none;
@@ -131,6 +134,20 @@
 .btn-secondary:hover {
   background: white;
   color: #667eea;
+}
+
+.btn-gallery {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-gallery:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(245, 87, 108, 0.3);
 }
 
 .btn-library {

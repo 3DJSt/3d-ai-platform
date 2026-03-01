@@ -7,6 +7,9 @@
       </div>
       <div class="project-status">
         <el-tag :type="statusType" size="small">{{ statusLabel }}</el-tag>
+        <el-tag v-if="project.is_public" type="success" size="small" effect="plain">
+          <el-icon><Star /></el-icon>已发表
+        </el-tag>
       </div>
     </div>
     
@@ -17,6 +20,9 @@
       </p>
       <div class="project-meta">
         <span class="update-time">{{ formatDate(project.updated_at) }}</span>
+        <span v-if="project.is_public" class="download-status">
+          <el-icon><Download /></el-icon>{{ project.allow_download ? '可下载' : '不可下载' }}
+        </span>
       </div>
     </div>
     
@@ -27,42 +33,92 @@
         </el-button>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item @click="handleEdit">
+            <el-dropdown-item v-if="!isPublic" @click="handleEdit">
               <el-icon><Edit /></el-icon>编辑
             </el-dropdown-item>
-            <el-dropdown-item @click="handleDuplicate">
+            <el-dropdown-item v-if="!isPublic" @click="handleDuplicate">
               <el-icon><CopyDocument /></el-icon>复制
             </el-dropdown-item>
-            <el-dropdown-item divided @click="handleDelete" class="delete-item">
+            <el-dropdown-item v-if="!isPublic" @click="handlePublish">
+              <el-icon><Star /></el-icon>{{ project.is_public ? '取消发表' : '发表到画廊' }}
+            </el-dropdown-item>
+            <el-dropdown-item v-if="!isPublic && project.is_public" @click="handleDownloadSettings">
+              <el-icon><Download /></el-icon>下载设置
+            </el-dropdown-item>
+            <el-dropdown-item v-if="!isPublic" divided @click="handleDelete" class="delete-item">
               <el-icon><Delete /></el-icon>删除
+            </el-dropdown-item>
+            <el-dropdown-item v-if="isPublic" @click="handleView">
+              <el-icon><View /></el-icon>查看详情
             </el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
     </div>
+
+    <!-- 发表设置对话框 -->
+    <el-dialog
+      v-model="publishDialogVisible"
+      title="发表到画廊"
+      width="400px"
+    >
+      <el-form :model="publishForm">
+        <el-form-item label="项目状态">
+          <el-switch
+            v-model="publishForm.isPublic"
+            active-text="公开"
+            inactive-text="私密"
+          />
+        </el-form-item>
+        <el-form-item label="下载设置">
+          <el-switch
+            v-model="publishForm.allowDownload"
+            active-text="允许下载"
+            inactive-text="禁止下载"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="publishDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmPublish">确定</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </el-card>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Box, More, Edit, CopyDocument, Delete } from '@element-plus/icons-vue'
+import { Box, More, Edit, CopyDocument, Delete, Star, Download, View } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { Project } from '@/types/project'
 import { ProjectStatusMap } from '@/types/project'
 import { useProjectStore } from '@/stores/projects'
+import { useGalleryStore } from '@/stores/gallery'
 
 const props = defineProps<{
   project: Project
+  isPublic?: boolean
 }>()
 
 const emit = defineEmits<{
   edit: [project: Project]
   delete: [id: number]
+  view: [project: Project]
 }>()
 
 const router = useRouter()
 const projectStore = useProjectStore()
+const galleryStore = useGalleryStore()
+
+// 对话框状态
+const publishDialogVisible = ref(false)
+const publishForm = ref({
+  isPublic: false,
+  allowDownload: true
+})
 
 const statusLabel = computed(() => {
   return ProjectStatusMap[props.project.status]?.label || props.project.status
@@ -70,6 +126,10 @@ const statusLabel = computed(() => {
 
 const statusType = computed(() => {
   return ProjectStatusMap[props.project.status]?.type || 'info'
+})
+
+const isPublic = computed(() => {
+  return props.isPublic || false
 })
 
 const formatDate = (dateStr: string) => {
@@ -82,7 +142,11 @@ const formatDate = (dateStr: string) => {
 }
 
 const goToDetail = () => {
-  router.push(`/library/project/${props.project.id}`)
+  if (isPublic.value) {
+    router.push(`/gallery/project/${props.project.id}`)
+  } else {
+    router.push(`/library/project/${props.project.id}`)
+  }
 }
 
 const handleEdit = () => {
@@ -95,6 +159,32 @@ const handleDuplicate = async () => {
     ElMessage.success('项目复制成功')
   } catch (error) {
     ElMessage.error('项目复制失败')
+  }
+}
+
+const handlePublish = () => {
+  publishForm.value.isPublic = !props.project.is_public
+  publishForm.value.allowDownload = props.project.allow_download
+  publishDialogVisible.value = true
+}
+
+const handleDownloadSettings = () => {
+  publishForm.value.isPublic = props.project.is_public
+  publishForm.value.allowDownload = props.project.allow_download
+  publishDialogVisible.value = true
+}
+
+const confirmPublish = async () => {
+  try {
+    await galleryStore.publishProject(
+      props.project.id,
+      publishForm.value.isPublic,
+      publishForm.value.allowDownload
+    )
+    ElMessage.success(publishForm.value.isPublic ? '项目发表成功' : '项目已设为私密')
+    publishDialogVisible.value = false
+  } catch (error) {
+    ElMessage.error('操作失败')
   }
 }
 
@@ -117,6 +207,10 @@ const handleDelete = async () => {
       ElMessage.error('项目删除失败')
     }
   }
+}
+
+const handleView = () => {
+  emit('view', props.project)
 }
 </script>
 
@@ -198,6 +292,14 @@ const handleDelete = async () => {
     .update-time {
       font-size: 12px;
       color: #909399;
+    }
+    
+    .download-status {
+      font-size: 12px;
+      color: #67c23a;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
   }
 }
