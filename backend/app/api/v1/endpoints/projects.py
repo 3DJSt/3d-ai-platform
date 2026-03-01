@@ -14,8 +14,16 @@ from app.schemas.project import (
     CommentResponse,
 )
 from app.core.security import get_current_user, require_admin
+from app.core.security import get_current_user
+from pydantic import BaseModel
 
 router = APIRouter()
+
+
+class ProjectPublishUpdate(BaseModel):
+    is_public: bool
+    thumbnail_url: Optional[str] = None
+    tags: Optional[list] = None
 
 
 @router.get("/", response_model=ProjectListResponse)
@@ -31,21 +39,17 @@ async def list_projects(
 ):
     query = db.query(Project).filter(Project.user_id == current_user.id)
     
-    # 状态筛选
     if status:
         query = query.filter(Project.status == status)
     
-    # 名称搜索
     if search:
         query = query.filter(Project.name.contains(search))
     
-    # 排序
     if sort_order == "desc":
         query = query.order_by(getattr(Project, sort_by).desc())
     else:
         query = query.order_by(getattr(Project, sort_by).asc())
     
-    # 分页
     total = query.count()
     items = query.offset((page - 1) * page_size).limit(page_size).all()
     
@@ -80,7 +84,12 @@ async def create_project(
             "model_key": None,
             "texture_keys": [],
             "animation_keys": []
-        }
+        },
+        is_public=False,
+        thumbnail_url=None,
+        view_count=0,
+        like_count=0,
+        tags=[]
     )
     
     db.add(new_project)
@@ -240,6 +249,45 @@ async def update_project_status(
     return {"message": "状态更新成功", "status": project.status}
 
 
+@router.put("/{project_id}/publish")
+async def update_project_publish(
+    project_id: int,
+    publish_data: ProjectPublishUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    project = db.query(Project).filter(
+        Project.id == project_id,
+        Project.user_id == current_user.id
+    ).first()
+    
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="项目不存在"
+        )
+    
+    if publish_data.is_public and project.status != "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="只有已完成的项目才能公开到画廊"
+        )
+    
+    project.is_public = publish_data.is_public
+    if publish_data.thumbnail_url is not None:
+        project.thumbnail_url = publish_data.thumbnail_url
+    if publish_data.tags is not None:
+        project.tags = publish_data.tags
+    
+    db.commit()
+    db.refresh(project)
+    
+    return {
+        "message": "发布状态更新成功",
+        "is_public": project.is_public
+    }
+
+
 @router.post("/{project_id}/duplicate", response_model=ProjectResponse)
 async def duplicate_project(
     project_id: int,
@@ -268,7 +316,12 @@ async def duplicate_project(
             "model_key": None,
             "texture_keys": [],
             "animation_keys": []
-        }
+        },
+        is_public=False,
+        thumbnail_url=None,
+        view_count=0,
+        like_count=0,
+        tags=[]
     )
     
     db.add(new_project)
