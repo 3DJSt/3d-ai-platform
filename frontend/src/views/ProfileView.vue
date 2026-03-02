@@ -609,6 +609,8 @@ function formatDate(date?: string) {
   max-width: 1000px;
   margin: 0 auto;
   padding: 20px;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f8f9ff 0%, #fff 100%);
 }
 
 .profile-header {
@@ -623,17 +625,19 @@ function formatDate(date?: string) {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s;
+  color: #fff;
+  font-weight: 500;
 }
 
 .home-btn:hover {
-  background: #e9ecef;
   transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
 .home-icon {
@@ -642,7 +646,10 @@ function formatDate(date?: string) {
 
 .profile-header h1 {
   font-size: 24px;
-  color: #333;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 0;
 }
 
@@ -654,12 +661,33 @@ function formatDate(date?: string) {
 
 .profile-card {
   width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(102, 126, 234, 0.1);
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.08);
+}
+
+.profile-card :deep(.el-card__header) {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.1);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.card-header :deep(.el-button--primary) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 8px;
+}
+
+.card-header :deep(.el-button--default) {
+  border-radius: 8px;
+  border-color: rgba(102, 126, 234, 0.3);
 }
 
 .avatar-section {
@@ -668,31 +696,65 @@ function formatDate(date?: string) {
   align-items: flex-start;
 }
 
+.avatar-section :deep(.el-avatar) {
+  border: 3px solid rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
+
+.profile-card :deep(.el-input__wrapper),
+.profile-card :deep(.el-textarea__inner) {
+  border-radius: 8px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  box-shadow: none;
+}
+
+.profile-card :deep(.el-input__wrapper:focus-within),
+.profile-card :deep(.el-textarea__inner:focus) {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.profile-card :deep(.el-select .el-input__wrapper) {
+  border-radius: 8px;
+}
+
+.profile-card :deep(.el-tag) {
+  border-radius: 12px;
+}
+
+.profile-card :deep(.el-tag--success) {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border-color: rgba(102, 126, 234, 0.3);
+  color: #667eea;
+}
+
 .appeal-detail {
   .detail-item {
     margin-bottom: 16px;
     
     .label {
       font-weight: bold;
-      color: #606266;
+      color: #1a1a2e;
     }
     
     .description {
       margin: 8px 0 0 0;
       padding: 12px;
-      background-color: #f5f7fa;
-      border-radius: 4px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.03) 100%);
+      border-radius: 8px;
       color: #606266;
       line-height: 1.6;
+      border: 1px solid rgba(102, 126, 234, 0.1);
     }
     
     .admin-response {
       margin: 8px 0 0 0;
       padding: 12px;
-      background-color: #f0f9ff;
-      border-radius: 4px;
-      color: #409EFF;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
+      border-radius: 8px;
+      color: #667eea;
       line-height: 1.6;
+      border: 1px solid rgba(102, 126, 234, 0.2);
     }
   }
 }

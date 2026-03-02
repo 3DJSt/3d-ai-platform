@@ -175,37 +175,40 @@
                 <!-- 加载模型 -->
                 <div v-if="currentStep === 'load'" class="step-content">
                   <div class="control-group">
-                    <label>模型来源</label>
-                    <div class="btn-group">
-                      <button class="control-btn-primary" @click="loadDefaultModel">
+                    <label>上传模型</label>
+                    <button class="control-btn-primary full-width" @click="showUploadModal = true">
+                      <el-icon><Upload /></el-icon>
+                      上传模型
+                    </button>
+                  </div>
+                  <div class="control-group">
+                    <label>快速加载</label>
+                    <div class="btn-group vertical">
+                      <button class="control-btn-secondary" @click="loadDefaultModel">
                         <el-icon><Download /></el-icon>
                         加载默认模型
                       </button>
-                      <button class="control-btn-secondary" @click="showUploadModal = true">
-                        <el-icon><Upload /></el-icon>
-                        上传模型
+                      <button class="control-btn-secondary" @click="goToTemplates">
+                        <el-icon><Files /></el-icon>
+                        选择模型模板
                       </button>
                     </div>
                   </div>
                   <div class="control-group">
-                    <label>最近文件</label>
+                    <label>AI智能生成</label>
+                    <button class="control-btn-primary full-width" @click="showAIModal = true">
+                      <el-icon><MagicStick /></el-icon>
+                      AI智能生成
+                    </button>
+                  </div>
+                  <div class="control-group">
+                    <label>最近上传文件</label>
                     <div class="recent-files">
                       <div class="recent-file" v-for="file in recentFiles" :key="file.name" @click="loadRecentFile(file)">
                         <el-icon><Document /></el-icon>
                         <span>{{ file.name }}</span>
                       </div>
                     </div>
-                  </div>
-                </div>
-                
-                <!-- 模型生成 -->
-                <div v-else-if="currentStep === 'generate'" class="step-content">
-                  <div class="control-group">
-                    <label>AI生成</label>
-                    <button class="control-btn-primary" @click="showAIModal = true">
-                      <el-icon><MagicStick /></el-icon>
-                      打开AI生成器
-                    </button>
                   </div>
                   <div class="control-group">
                     <label>生成历史</label>
@@ -432,37 +435,62 @@
       </template>
     </el-dialog>
 
-    <!-- AI生成弹窗 -->
-    <el-dialog
-      v-model="showAIModal"
-      title="AI生成模型"
-      width="600px"
-      class="dark-dialog"
+    <!-- AI智能生成悬浮聊天框 -->
+    <div 
+      v-if="showAIModal" 
+      class="ai-chat-panel"
+      :style="{ left: chatPanel.x + 'px', top: chatPanel.y + 'px' }"
     >
-      <el-form :model="aiForm">
-        <el-form-item label="描述">
+      <div class="chat-header" @mousedown="startDrag">
+        <div class="chat-title">
+          <el-icon><MagicStick /></el-icon>
+          <span>AI智能生成</span>
+        </div>
+        <div class="chat-actions">
+          <button class="chat-btn minimize" @click="toggleMinimize" title="最小化">
+            <el-icon><Minus /></el-icon>
+          </button>
+          <button class="chat-btn close" @click="showAIModal = false" title="关闭">
+            <el-icon><Close /></el-icon>
+          </button>
+        </div>
+      </div>
+      <div class="chat-body" v-show="!chatPanel.minimized">
+        <div class="chat-messages" ref="chatMessagesRef">
+          <div class="message ai">
+            <div class="message-content">
+              您好！我是AI助手，请描述您想要创建的3D模型，我会帮您生成。
+            </div>
+          </div>
+          <div 
+            v-for="(msg, index) in chatMessages" 
+            :key="index" 
+            :class="['message', msg.role]"
+          >
+            <div class="message-content">{{ msg.content }}</div>
+          </div>
+        </div>
+        <div class="chat-input-area">
           <el-input
             v-model="aiForm.description"
             type="textarea"
-            rows="4"
-            placeholder="请描述您想要的模型..."
+            :rows="2"
+            placeholder="描述您想要的模型..."
+            @keydown.enter.ctrl="sendAIMessage"
           />
-        </el-form-item>
-        <el-form-item label="风格">
-          <el-select v-model="aiForm.style">
-            <el-option label="写实风格" value="realistic" />
-            <el-option label="卡通风格" value="cartoon" />
-            <el-option label="低多边形" value="lowpoly" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="showAIModal = false">取消</el-button>
-          <el-button type="primary" @click="generateModel">生成模型</el-button>
-        </span>
-      </template>
-    </el-dialog>
+          <div class="input-actions">
+            <el-select v-model="aiForm.style" size="small" style="width: 120px;">
+              <el-option label="写实风格" value="realistic" />
+              <el-option label="卡通风格" value="cartoon" />
+              <el-option label="低多边形" value="lowpoly" />
+            </el-select>
+            <el-button type="primary" size="small" @click="sendAIMessage">
+              发送
+            </el-button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -500,7 +528,9 @@ import {
   ArrowRightBold,
   List,
   Brush,
-  UploadFilled
+  UploadFilled,
+  Files,
+  Close
 } from '@element-plus/icons-vue'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
@@ -513,8 +543,7 @@ const projectName = ref('')
 
 // 流程步骤
 const processSteps = ref([
-  { id: 'load', title: '加载模型', description: '导入或创建模型', icon: 'Download' },
-  { id: 'generate', title: '模型生成', description: '使用AI生成模型', icon: 'MagicStick' },
+  { id: 'load', title: '加载模型', description: '导入、上传或AI生成模型', icon: 'Download' },
   { id: 'render', title: '渲染模型', description: '设置材质和光照', icon: 'View' },
   { id: 'rig', title: '骨骼绑定', description: '添加骨骼系统', icon: 'Box' },
   { id: 'animate', title: '动画生成', description: '创建动画效果', icon: 'VideoCamera' },
@@ -585,6 +614,17 @@ const aiForm = ref({
   description: '',
   style: 'realistic'
 })
+
+// AI聊天面板
+const chatMessagesRef = ref<HTMLElement | null>(null)
+const chatMessages = ref<{ role: string; content: string }[]>([])
+const chatPanel = ref({
+  x: window.innerWidth - 420,
+  y: window.innerHeight - 350,
+  minimized: false
+})
+const isDragging = ref(false)
+const dragOffset = ref({ x: 0, y: 0 })
 
 // 上传设置
 const showUploadModal = ref(false)
@@ -810,6 +850,79 @@ const exportModel = () => {
   ElMessage.info('模型导出功能开发中')
 }
 
+// 跳转到模板页面
+const goToTemplates = () => {
+  router.push('/templates')
+}
+
+// AI聊天面板拖拽功能
+const startDrag = (e: MouseEvent) => {
+  isDragging.value = true
+  dragOffset.value = {
+    x: e.clientX - chatPanel.value.x,
+    y: e.clientY - chatPanel.value.y
+  }
+  document.addEventListener('mousemove', onDrag)
+  document.addEventListener('mouseup', stopDrag)
+}
+
+const onDrag = (e: MouseEvent) => {
+  if (!isDragging.value) return
+  chatPanel.value.x = e.clientX - dragOffset.value.x
+  chatPanel.value.y = e.clientY - dragOffset.value.y
+  
+  // 边界限制
+  const maxX = window.innerWidth - 400
+  const maxY = window.innerHeight - 100
+  chatPanel.value.x = Math.max(0, Math.min(chatPanel.value.x, maxX))
+  chatPanel.value.y = Math.max(0, Math.min(chatPanel.value.y, maxY))
+}
+
+const stopDrag = () => {
+  isDragging.value = false
+  document.removeEventListener('mousemove', onDrag)
+  document.removeEventListener('mouseup', stopDrag)
+}
+
+// 最小化聊天面板
+const toggleMinimize = () => {
+  chatPanel.value.minimized = !chatPanel.value.minimized
+}
+
+// 发送AI消息
+const sendAIMessage = () => {
+  if (!aiForm.value.description.trim()) return
+  
+  // 添加用户消息
+  chatMessages.value.push({
+    role: 'user',
+    content: aiForm.value.description
+  })
+  
+  const userDesc = aiForm.value.description
+  aiForm.value.description = ''
+  
+  // 滚动到底部
+  setTimeout(() => {
+    if (chatMessagesRef.value) {
+      chatMessagesRef.value.scrollTop = chatMessagesRef.value.scrollHeight
+    }
+  }, 50)
+  
+  // 模拟AI响应
+  setTimeout(() => {
+    chatMessages.value.push({
+      role: 'ai',
+      content: `正在根据您的描述"${userDesc}"生成模型，风格：${aiForm.value.style}，请稍候...`
+    })
+    setTimeout(() => {
+      if (chatMessagesRef.value) {
+        chatMessagesRef.value.scrollTop = chatMessagesRef.value.scrollHeight
+      }
+    }, 50)
+  }, 1000)
+}
+
 // 生成模型
 const generateModel = () => {
   ElMessage.info('AI生成功能开发中')
@@ -894,7 +1007,7 @@ onUnmounted(() => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #1a1a1a;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   color: #e0e0e0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -902,13 +1015,14 @@ onUnmounted(() => {
 /* ========== 顶部标题栏 ========== */
 .top-bar {
   height: 48px;
-  background: #2a2a2a;
-  border-bottom: 1px solid #3a3a3a;
+  background: rgba(26, 26, 46, 0.95);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.2);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
   flex-shrink: 0;
+  backdrop-filter: blur(10px);
 }
 
 .top-bar-left {
@@ -922,9 +1036,9 @@ onUnmounted(() => {
   height: 32px;
   background: transparent;
   border: none;
-  color: #aaa;
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -932,7 +1046,7 @@ onUnmounted(() => {
 }
 
 .home-btn:hover {
-  background: #3a3a3a;
+  background: rgba(102, 126, 234, 0.3);
   color: #fff;
 }
 
@@ -949,7 +1063,7 @@ onUnmounted(() => {
 }
 
 .project-name {
-  color: #888;
+  color: rgba(255, 255, 255, 0.5);
   font-size: 13px;
 }
 
@@ -962,9 +1076,10 @@ onUnmounted(() => {
 .workflow-steps {
   display: flex;
   gap: 4px;
-  background: #222;
+  background: rgba(0, 0, 0, 0.3);
   padding: 4px;
-  border-radius: 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(102, 126, 234, 0.15);
 }
 
 .workflow-step {
@@ -974,20 +1089,20 @@ onUnmounted(() => {
   padding: 6px 12px;
   background: transparent;
   border: none;
-  color: #888;
+  color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.2s;
   font-size: 12px;
 }
 
 .workflow-step:hover {
-  background: #333;
-  color: #ccc;
+  background: rgba(102, 126, 234, 0.2);
+  color: #fff;
 }
 
 .workflow-step.active {
-  background: #4a9eff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
 }
 
@@ -1039,17 +1154,18 @@ onUnmounted(() => {
 .sidebar-left,
 .sidebar-right {
   width: 280px;
-  background: #252525;
-  border-right: 1px solid #3a3a3a;
+  background: rgba(26, 26, 46, 0.9);
+  border-right: 1px solid rgba(102, 126, 234, 0.15);
   display: flex;
   flex-direction: column;
   position: relative;
   transition: width 0.3s ease;
+  backdrop-filter: blur(10px);
 }
 
 .sidebar-right {
   border-right: none;
-  border-left: 1px solid #3a3a3a;
+  border-left: 1px solid rgba(102, 126, 234, 0.15);
 }
 
 .sidebar-left.collapsed,
@@ -1063,29 +1179,29 @@ onUnmounted(() => {
   transform: translateY(-50%);
   width: 16px;
   height: 48px;
-  background: #333;
-  border: 1px solid #444;
+  background: rgba(102, 126, 234, 0.2);
+  border: 1px solid rgba(102, 126, 234, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #888;
+  color: rgba(255, 255, 255, 0.6);
   z-index: 10;
   transition: all 0.2s;
 }
 
 .sidebar-left .sidebar-toggle {
   right: -8px;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 6px 6px 0;
 }
 
 .sidebar-right .sidebar-toggle {
   left: -8px;
-  border-radius: 4px 0 0 4px;
+  border-radius: 6px 0 0 6px;
 }
 
 .sidebar-toggle:hover {
-  background: #444;
+  background: rgba(102, 126, 234, 0.4);
   color: #fff;
 }
 
@@ -1098,7 +1214,7 @@ onUnmounted(() => {
 
 .sidebar-header {
   padding: 12px 16px;
-  border-bottom: 1px solid #3a3a3a;
+  border-bottom: 1px solid rgba(102, 126, 234, 0.15);
 }
 
 .sidebar-header h3 {
@@ -1123,21 +1239,21 @@ onUnmounted(() => {
   gap: 12px;
   padding: 12px;
   margin-bottom: 4px;
-  background: #2a2a2a;
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
   border: 1px solid transparent;
 }
 
 .workflow-item:hover {
-  background: #333;
-  border-color: #444;
+  background: rgba(102, 126, 234, 0.15);
+  border-color: rgba(102, 126, 234, 0.3);
 }
 
 .workflow-item.active {
-  background: #4a9eff22;
-  border-color: #4a9eff;
+  background: rgba(102, 126, 234, 0.2);
+  border-color: rgba(102, 126, 234, 0.5);
 }
 
 .workflow-item.completed {
@@ -1147,19 +1263,19 @@ onUnmounted(() => {
 .workflow-number {
   width: 24px;
   height: 24px;
-  background: #444;
+  background: rgba(102, 126, 234, 0.3);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
   font-weight: 600;
-  color: #aaa;
+  color: rgba(255, 255, 255, 0.8);
   flex-shrink: 0;
 }
 
 .workflow-item.active .workflow-number {
-  background: #4a9eff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
 }
 
@@ -1181,7 +1297,7 @@ onUnmounted(() => {
 
 .workflow-desc {
   font-size: 11px;
-  color: #888;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .completed-icon {
@@ -1194,14 +1310,14 @@ onUnmounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #1a1a1a;
+  background: linear-gradient(180deg, #0f3460 0%, #16213e 50%, #1a1a2e 100%);
   position: relative;
 }
 
 .viewport-header {
   height: 36px;
-  background: #252525;
-  border-bottom: 1px solid #3a3a3a;
+  background: rgba(26, 26, 46, 0.9);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.15);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1218,15 +1334,15 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: #333;
-  border-radius: 4px 4px 0 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px 6px 0 0;
   font-size: 12px;
-  color: #aaa;
+  color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
 }
 
 .viewport-tab.active {
-  background: #4a9eff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
 }
 
@@ -1281,9 +1397,9 @@ onUnmounted(() => {
   height: 28px;
   background: transparent;
   border: none;
-  color: #888;
+  color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1291,7 +1407,7 @@ onUnmounted(() => {
 }
 
 .tool-btn:hover {
-  background: #3a3a3a;
+  background: rgba(102, 126, 234, 0.3);
   color: #fff;
 }
 
@@ -1303,14 +1419,14 @@ onUnmounted(() => {
 
 .viewport-footer {
   height: 28px;
-  background: #252525;
-  border-top: 1px solid #3a3a3a;
+  background: rgba(26, 26, 46, 0.9);
+  border-top: 1px solid rgba(102, 126, 234, 0.15);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
   font-size: 11px;
-  color: #888;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .viewport-info {
@@ -1328,9 +1444,9 @@ onUnmounted(() => {
   height: 24px;
   background: transparent;
   border: none;
-  color: #888;
+  color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1338,7 +1454,7 @@ onUnmounted(() => {
 }
 
 .control-btn:hover {
-  background: #3a3a3a;
+  background: rgba(102, 126, 234, 0.3);
   color: #fff;
 }
 
@@ -1349,7 +1465,7 @@ onUnmounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(26, 26, 26, 0.9);
+  background: rgba(26, 26, 46, 0.9);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1360,8 +1476,8 @@ onUnmounted(() => {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #333;
-  border-top: 3px solid #4a9eff;
+  border: 3px solid rgba(102, 126, 234, 0.2);
+  border-top: 3px solid #667eea;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 16px;
@@ -1379,12 +1495,12 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #666;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .no-model-icon {
   margin-bottom: 16px;
-  color: #444;
+  color: rgba(102, 126, 234, 0.5);
 }
 
 .action-btn {
@@ -1393,9 +1509,9 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background: #4a9eff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #fff;
   font-size: 14px;
   cursor: pointer;
@@ -1403,14 +1519,15 @@ onUnmounted(() => {
 }
 
 .action-btn:hover {
-  background: #3a8eef;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
 /* ========== 右侧面板标签 ========== */
 .panel-tabs {
   display: flex;
-  background: #222;
-  border-bottom: 1px solid #3a3a3a;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.15);
 }
 
 .panel-tab {
@@ -1422,20 +1539,20 @@ onUnmounted(() => {
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  color: #888;
+  color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .panel-tab:hover {
-  color: #ccc;
-  background: #2a2a2a;
+  color: #fff;
+  background: rgba(102, 126, 234, 0.15);
 }
 
 .panel-tab.active {
-  color: #4a9eff;
-  border-bottom-color: #4a9eff;
-  background: #2a2a2a;
+  color: #fff;
+  border-bottom-color: #667eea;
+  background: rgba(102, 126, 234, 0.2);
 }
 
 .panel-content {
@@ -1468,7 +1585,7 @@ onUnmounted(() => {
 .control-group label {
   display: block;
   font-size: 12px;
-  color: #aaa;
+  color: rgba(255, 255, 255, 0.6);
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1491,7 +1608,7 @@ onUnmounted(() => {
   justify-content: center;
   gap: 8px;
   padding: 10px 16px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
@@ -1499,32 +1616,38 @@ onUnmounted(() => {
 }
 
 .control-btn-primary {
-  background: #4a9eff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
 }
 
 .control-btn-primary:hover {
-  background: #3a8eef;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
 .control-btn-secondary {
-  background: #333;
-  color: #ccc;
-  border: 1px solid #444;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(102, 126, 234, 0.3);
 }
 
 .control-btn-secondary:hover {
-  background: #444;
+  background: rgba(102, 126, 234, 0.2);
   color: #fff;
+  border-color: rgba(102, 126, 234, 0.5);
+}
+
+.control-btn-primary.full-width {
+  width: 100%;
 }
 
 .control-btn-icon {
   width: 36px;
   height: 36px;
-  background: #333;
-  border: 1px solid #444;
-  border-radius: 6px;
-  color: #ccc;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1533,7 +1656,7 @@ onUnmounted(() => {
 }
 
 .control-btn-icon:hover {
-  background: #444;
+  background: rgba(102, 126, 234, 0.2);
   color: #fff;
 }
 
@@ -1548,12 +1671,12 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid rgba(102, 126, 234, 0.15);
 }
 
 .setting-item span {
   font-size: 13px;
-  color: #ccc;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .checkbox-group {
@@ -1582,8 +1705,8 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 10px;
-  background: #2a2a2a;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
   font-size: 12px;
@@ -1594,7 +1717,7 @@ onUnmounted(() => {
 .anim-item:hover,
 .outline-item:hover,
 .material-item:hover {
-  background: #333;
+  background: rgba(102, 126, 234, 0.15);
 }
 
 .history-thumb,
@@ -1602,8 +1725,8 @@ onUnmounted(() => {
 .material-preview {
   width: 40px;
   height: 40px;
-  background: #444;
-  border-radius: 4px;
+  background: rgba(102, 126, 234, 0.2);
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1619,12 +1742,12 @@ onUnmounted(() => {
 
 .history-info span,
 .anim-info span {
-  color: #ccc;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .history-info small,
 .anim-info small {
-  color: #666;
+  color: rgba(255, 255, 255, 0.5);
   font-size: 11px;
 }
 
@@ -1642,8 +1765,8 @@ onUnmounted(() => {
 /* ========== 底部时间轴 ========== */
 .timeline-bar {
   height: 48px;
-  background: #252525;
-  border-top: 1px solid #3a3a3a;
+  background: rgba(26, 26, 46, 0.9);
+  border-top: 1px solid rgba(102, 126, 234, 0.15);
   display: flex;
   align-items: center;
   gap: 16px;
@@ -1658,10 +1781,10 @@ onUnmounted(() => {
 .timeline-btn {
   width: 32px;
   height: 32px;
-  background: #333;
-  border: 1px solid #444;
-  border-radius: 4px;
-  color: #ccc;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1670,18 +1793,19 @@ onUnmounted(() => {
 }
 
 .timeline-btn:hover {
-  background: #444;
+  background: rgba(102, 126, 234, 0.3);
   color: #fff;
 }
 
 .timeline-btn.play {
-  background: #4a9eff;
-  border-color: #4a9eff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: transparent;
   color: #fff;
 }
 
 .timeline-btn.play:hover {
-  background: #3a8eef;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
 .timeline-slider-container {
@@ -1693,7 +1817,7 @@ onUnmounted(() => {
 
 .frame-number {
   font-size: 12px;
-  color: #888;
+  color: rgba(255, 255, 255, 0.5);
   font-variant-numeric: tabular-nums;
   min-width: 36px;
   text-align: center;
@@ -1705,12 +1829,12 @@ onUnmounted(() => {
 }
 
 :deep(.dark-select .el-input__wrapper) {
-  background: #2a2a2a;
-  box-shadow: 0 0 0 1px #444;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 1px rgba(102, 126, 234, 0.3);
 }
 
 :deep(.dark-select .el-input__inner) {
-  color: #ccc;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 :deep(.dark-color-picker) {
@@ -1719,18 +1843,18 @@ onUnmounted(() => {
 
 :deep(.dark-color-picker .el-color-picker__trigger) {
   width: 100%;
-  background: #2a2a2a;
-  border-color: #444;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(102, 126, 234, 0.3);
 }
 
 :deep(.dark-slider) {
-  --el-slider-main-bg-color: #4a9eff;
-  --el-slider-runway-bg-color: #444;
+  --el-slider-main-bg-color: #667eea;
+  --el-slider-runway-bg-color: rgba(102, 126, 234, 0.2);
 }
 
 :deep(.dark-slider .el-slider__button) {
-  border-color: #4a9eff;
-  background: #4a9eff;
+  border-color: #667eea;
+  background: #667eea;
 }
 
 :deep(.dark-input-number) {
@@ -1738,25 +1862,25 @@ onUnmounted(() => {
 }
 
 :deep(.dark-input-number .el-input__wrapper) {
-  background: #2a2a2a;
-  box-shadow: 0 0 0 1px #444;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 1px rgba(102, 126, 234, 0.3);
 }
 
 :deep(.dark-input-number .el-input__inner) {
-  color: #ccc;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 :deep(.dark-switch) {
-  --el-switch-on-color: #4a9eff;
-  --el-switch-off-color: #444;
+  --el-switch-on-color: #667eea;
+  --el-switch-off-color: rgba(102, 126, 234, 0.3);
 }
 
 :deep(.dark-checkbox) {
-  --el-checkbox-text-color: #ccc;
+  --el-checkbox-text-color: rgba(255, 255, 255, 0.8);
   --el-checkbox-checked-text-color: #fff;
-  --el-checkbox-checked-bg-color: #4a9eff;
+  --el-checkbox-checked-bg-color: #667eea;
   --el-checkbox-checked-icon-color: #fff;
-  --el-checkbox-checked-border-color: #4a9eff;
+  --el-checkbox-checked-border-color: #667eea;
 }
 
 :deep(.dark-checkbox .el-checkbox__input.is-checked + .el-checkbox__label) {
@@ -1764,12 +1888,12 @@ onUnmounted(() => {
 }
 
 :deep(.dark-dialog) {
-  background: #2a2a2a;
+  background: rgba(26, 26, 46, 0.95);
 }
 
 :deep(.dark-dialog .el-dialog__header) {
-  background: #252525;
-  border-bottom: 1px solid #3a3a3a;
+  background: rgba(26, 26, 46, 0.9);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.2);
   margin-right: 0;
   padding: 16px 20px;
 }
@@ -1779,27 +1903,173 @@ onUnmounted(() => {
 }
 
 :deep(.dark-dialog .el-dialog__body) {
-  background: #2a2a2a;
-  color: #ccc;
+  background: rgba(26, 26, 46, 0.95);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 :deep(.dark-dialog .el-dialog__footer) {
-  background: #252525;
-  border-top: 1px solid #3a3a3a;
+  background: rgba(26, 26, 46, 0.9);
+  border-top: 1px solid rgba(102, 126, 234, 0.2);
 }
 
 :deep(.dark-dialog .el-upload) {
-  background: #333;
-  border: 2px dashed #444;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px dashed rgba(102, 126, 234, 0.4);
+  border-radius: 12px;
 }
 
 :deep(.dark-dialog .el-upload__text) {
-  color: #ccc;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 :deep(.dark-dialog .el-upload__text em) {
-  color: #4a9eff;
+  color: #667eea;
+}
+
+/* ========== AI聊天面板样式 ========== */
+.ai-chat-panel {
+  position: fixed;
+  width: 400px;
+  background: rgba(26, 26, 46, 0.95);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  overflow: hidden;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.2) 100%);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+  cursor: move;
+  user-select: none;
+}
+
+.chat-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.chat-title .el-icon {
+  color: #a78bfa;
+}
+
+.chat-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.chat-btn:hover {
+  background: rgba(102, 126, 234, 0.4);
+  color: #fff;
+}
+
+.chat-btn.close:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+.chat-body {
+  display: flex;
+  flex-direction: column;
+  height: 280px;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.message.ai {
+  align-self: flex-start;
+  background: rgba(102, 126, 234, 0.2);
+  color: #e0e0e0;
+  border-bottom-left-radius: 4px;
+}
+
+.message.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.message-content {
+  word-wrap: break-word;
+}
+
+.chat-input-area {
+  padding: 12px;
+  border-top: 1px solid rgba(102, 126, 234, 0.2);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.chat-input-area .el-textarea__inner {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  color: #fff;
+  border-radius: 8px;
+  resize: none;
+}
+
+.chat-input-area .el-textarea__inner:focus {
+  border-color: #667eea;
+}
+
+.chat-input-area .el-textarea__inner::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.input-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.input-actions .el-select .el-input__wrapper {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  box-shadow: none;
+}
+
+.input-actions .el-select .el-input__inner {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* ========== 滚动条样式 ========== */
@@ -1809,16 +2079,16 @@ onUnmounted(() => {
 }
 
 ::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: rgba(26, 26, 46, 0.5);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #444;
+  background: rgba(102, 126, 234, 0.4);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: rgba(102, 126, 234, 0.6);
 }
 
 /* ========== 响应式 ========== */

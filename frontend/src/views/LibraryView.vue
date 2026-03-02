@@ -219,6 +219,8 @@ onMounted(() => {
   padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f8f9ff 0%, #fff 100%);
 }
 
 .page-header {
@@ -236,13 +238,38 @@ onMounted(() => {
       margin: 0 0 8px;
       font-size: 28px;
       font-weight: 600;
-      color: #303133;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     .page-subtitle {
       margin: 0;
       font-size: 14px;
-      color: #909399;
+      color: #666;
+    }
+  }
+  
+  :deep(.el-button--primary) {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 10px;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+  }
+  
+  :deep(.el-button.is-plain) {
+    border-radius: 10px;
+    border-color: rgba(102, 126, 234, 0.3);
+    color: #667eea;
+    
+    &:hover {
+      background: rgba(102, 126, 234, 0.1);
+      border-color: #667eea;
     }
   }
 }
@@ -251,13 +278,43 @@ onMounted(() => {
   display: flex;
   gap: 16px;
   margin-bottom: 24px;
-  padding: 16px;
+  padding: 16px 20px;
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.08);
+  border: 1px solid rgba(102, 126, 234, 0.1);
 
   .search-input {
     width: 300px;
+  }
+  
+  :deep(.el-input__wrapper) {
+    border-radius: 8px;
+    box-shadow: none;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    
+    &:focus-within {
+      border-color: #667eea;
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    }
+  }
+  
+  :deep(.el-select .el-input__wrapper) {
+    border-radius: 8px;
+  }
+  
+  :deep(.el-radio-button__inner) {
+    border-radius: 8px !important;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    background: #fff;
+    color: #666;
+  }
+  
+  :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+    color: #fff;
+    box-shadow: none;
   }
 }
 
@@ -285,6 +342,10 @@ onMounted(() => {
 
 .batch-actions {
   margin-left: auto;
+  
+  :deep(.el-button--danger) {
+    border-radius: 8px;
+  }
 }
 
 .empty-content {
@@ -308,5 +369,13 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   padding: 24px 0;
+  
+  :deep(.el-pagination.is-background .el-pager li:not(.is-disabled).is-active) {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  
+  :deep(.el-pagination.is-background .el-pager li:not(.is-disabled):hover) {
+    color: #667eea;
+  }
 }
 </style>
