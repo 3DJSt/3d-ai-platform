@@ -39,13 +39,6 @@
             <span>举报管理</span>
             <el-badge v-if="pendingReports > 0" :value="pendingReports" class="menu-badge" />
           </el-menu-item>
-          
-          <el-divider />
-          
-          <el-menu-item index="/">
-            <el-icon><HomeFilled /></el-icon>
-            <span>返回前台</span>
-          </el-menu-item>
         </el-menu>
       </el-aside>
       
@@ -89,7 +82,6 @@ import {
   Message,
   Folder,
   Warning,
-  HomeFilled,
   ArrowDown
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'

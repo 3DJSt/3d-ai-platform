@@ -332,12 +332,13 @@ const selectTemplate = (template: any) => {
 // 确认选择模板
 const confirmSelectTemplate = () => {
   if (selectedTemplate.value) {
-    // 跳转到建模页面，传递模板信息
+    // 跳转到3D模型编辑页面，传递模板信息
     router.push({
-      path: '/modeling',
+      path: '/create',
       query: {
         projectId: `template_${selectedTemplate.value.id}`,
-        templateId: selectedTemplate.value.id
+        templateId: selectedTemplate.value.id,
+        templateName: selectedTemplate.value.name
       }
     })
     ElMessage.success(`已选择模板：${selectedTemplate.value.name}`)
@@ -387,7 +388,7 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
-  background: #f5f7fa;
+  background: linear-gradient(180deg, #f8f9ff 0%, #fff 100%);
   min-height: 100vh;
 }
 
@@ -403,17 +404,19 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s;
+  color: #fff;
+  font-weight: 500;
 }
 
 .home-btn:hover {
-  background: #e9ecef;
   transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
 .home-icon {
@@ -422,7 +425,10 @@ onMounted(() => {
 
 .page-title h1 {
   font-size: 2.5rem;
-  color: #333;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 0;
 }
 
@@ -444,11 +450,41 @@ onMounted(() => {
   min-width: 300px;
 }
 
+.search-filter :deep(.el-input__wrapper) {
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.search-filter :deep(.el-input__wrapper:focus-within) {
+  border-color: #667eea;
+  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.2);
+}
+
 .category-nav {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 2rem;
   flex-wrap: wrap;
+}
+
+.category-nav :deep(.el-button) {
+  border-radius: 20px;
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  background: #fff;
+  color: #666;
+  transition: all 0.3s;
+}
+
+.category-nav :deep(.el-button:hover) {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.category-nav :deep(.el-button--primary) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: #fff;
 }
 
 .templates-grid {
@@ -460,16 +496,18 @@ onMounted(() => {
 
 .template-card {
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.1);
   transition: all 0.3s;
   cursor: pointer;
+  border: 1px solid rgba(102, 126, 234, 0.1);
 }
 
 .template-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
+  border-color: rgba(102, 126, 234, 0.3);
 }
 
 .template-preview {
@@ -495,7 +533,7 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -507,6 +545,14 @@ onMounted(() => {
   opacity: 1;
 }
 
+.template-overlay :deep(.el-button--primary) {
+  background: #fff;
+  color: #667eea;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 24px;
+}
+
 .template-info {
   padding: 1.5rem;
 }
@@ -514,7 +560,7 @@ onMounted(() => {
 .template-info h3 {
   margin: 0 0 0.5rem;
   font-size: 1.2rem;
-  color: #333;
+  color: #1a1a2e;
 }
 
 .template-info p {
