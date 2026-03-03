@@ -22,7 +22,11 @@
 
     <div class="top-buttons">
       <router-link to="/library" class="btn-top">
-        <span class="btn-icon">📁</span>我的项目库
+        <span class="btn-icon">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="#a8b4ff">
+            <path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+          </svg>
+        </span>我的项目库
       </router-link>
       <router-link to="/profile" class="btn-top">
         <span class="btn-icon">👤</span>个人中心
@@ -427,17 +431,19 @@ onMounted(() => {
 .features-section {
   position: relative;
   z-index: 1;
-  padding: 100px 40px;
+  padding: 120px 40px;
   background: linear-gradient(180deg, 
-    rgba(15, 52, 96, 0.6) 0%, 
-    rgba(22, 33, 62, 0.85) 10%,
-    rgba(26, 26, 46, 0.95) 20%,
-    rgba(40, 40, 60, 0.9) 35%,
-    rgba(80, 80, 100, 0.7) 50%,
-    rgba(120, 120, 140, 0.5) 65%,
-    rgba(180, 180, 200, 0.3) 80%,
-    rgba(240, 240, 250, 0.1) 95%,
-    rgba(255, 255, 255, 0.98) 100%
+    rgba(15, 52, 96, 0.4) 0%, 
+    rgba(22, 33, 62, 0.55) 10%,
+    rgba(26, 26, 46, 0.7) 20%,
+    rgba(35, 35, 55, 0.78) 30%,
+    rgba(50, 50, 70, 0.82) 40%,
+    rgba(70, 70, 95, 0.78) 50%,
+    rgba(90, 90, 120, 0.72) 60%,
+    rgba(110, 110, 145, 0.65) 70%,
+    rgba(130, 130, 165, 0.58) 80%,
+    rgba(145, 145, 180, 0.52) 90%,
+    rgba(155, 155, 190, 0.48) 100%
   );
 }
 
@@ -497,11 +503,17 @@ onMounted(() => {
 .quick-start {
   position: relative;
   z-index: 1;
-  padding: 100px 40px;
+  padding: 100px 40px 120px;
   background: linear-gradient(180deg, 
-    rgba(255, 255, 255, 0.98) 0%, 
-    #f8f9ff 30%,
-    #fff 100%
+    rgba(155, 155, 190, 0.48) 0%, 
+    rgba(145, 145, 180, 0.52) 12%,
+    rgba(135, 135, 175, 0.55) 24%,
+    rgba(125, 125, 170, 0.58) 36%,
+    rgba(115, 115, 165, 0.62) 48%,
+    rgba(105, 105, 160, 0.65) 60%,
+    rgba(95, 95, 155, 0.68) 72%,
+    rgba(85, 85, 150, 0.72) 84%,
+    rgba(75, 75, 145, 0.75) 100%
   );
 }
 
@@ -509,7 +521,7 @@ onMounted(() => {
   text-align: center;
   font-size: 2.8rem;
   margin-bottom: 60px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #a8b4ff 0%, #c49bff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -532,16 +544,18 @@ onMounted(() => {
   max-width: 320px;
   padding: 30px;
   border-radius: 20px;
-  background: #fff;
-  box-shadow: 0 10px 40px rgba(102, 126, 234, 0.1);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
-  border: 1px solid rgba(102, 126, 234, 0.15);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  backdrop-filter: blur(10px);
 }
 
 .step:hover {
   transform: translateY(-5px);
-  box-shadow: 0 15px 50px rgba(102, 126, 234, 0.2);
-  border-color: rgba(102, 126, 234, 0.3);
+  box-shadow: 0 15px 50px rgba(102, 126, 234, 0.3);
+  border-color: rgba(102, 126, 234, 0.4);
+  background: rgba(255, 255, 255, 0.92);
 }
 
 .step-number {

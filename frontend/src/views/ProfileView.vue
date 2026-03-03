@@ -1,5 +1,25 @@
 <template>
   <div class="profile-container">
+    <!-- 背景动画 -->
+    <div class="background-animation">
+      <div 
+        v-for="(bubble, index) in bubbles" 
+        :key="index"
+        class="bubble"
+        :style="{
+          left: bubble.x + '%',
+          animationDuration: bubble.duration + 's',
+          animationDelay: bubble.delay + 's',
+          width: bubble.size + 'px',
+          height: bubble.size + 'px'
+        }"
+      >
+        <svg viewBox="0 0 100 100" class="silhouette" :class="bubble.type">
+          <component :is="getSilhouette(bubble.type)" />
+        </svg>
+      </div>
+    </div>
+
     <div class="profile-header">
       <button class="home-btn" @click="goHome">
         <span class="home-icon">🏠</span> 返回主页
@@ -308,7 +328,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, h } from 'vue'
 import { Lock, SwitchButton, Message } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
@@ -319,6 +339,55 @@ import type { Appeal } from '@/types/appeal'
 
 const authStore = useAuthStore()
 const router = useRouter()
+
+// 背景动画气泡
+const bubbles = ref<Array<{x: number; duration: number; delay: number; size: number; type: string}>>([])
+const bubbleTypes = ['man', 'woman', 'child', 'elder']
+
+// 获取剪影SVG组件
+const getSilhouette = (type: string) => {
+  const silhouettes: Record<string, any> = {
+    man: {
+      render: () => h('path', { 
+        d: 'M50 15 C55 15 60 20 60 25 C60 32 55 37 50 37 C45 37 40 32 40 25 C40 20 45 15 50 15 M45 40 L40 75 L35 75 L38 55 L30 90 L38 90 L42 70 L45 90 L55 90 L58 70 L62 90 L70 90 L62 55 L65 75 L60 75 L55 40 C53 38 47 38 45 40 Z',
+        fill: 'rgba(102, 126, 234, 0.15)'
+      })
+    },
+    woman: {
+      render: () => h('path', { 
+        d: 'M50 15 C55 15 60 20 60 25 C60 32 55 37 50 37 C45 37 40 32 40 25 C40 20 45 15 50 15 M45 40 L42 55 L35 55 L40 40 M55 40 L58 55 L65 55 L60 40 M43 40 L40 90 L45 90 L48 60 L50 75 L52 60 L55 90 L60 90 L57 40 C55 38 45 38 43 40 Z',
+        fill: 'rgba(118, 75, 162, 0.15)'
+      })
+    },
+    child: {
+      render: () => h('path', { 
+        d: 'M50 20 C54 20 58 24 58 28 C58 33 54 37 50 37 C46 37 42 33 42 28 C42 24 46 20 50 20 M46 40 L44 70 L40 70 L43 55 L38 85 L44 85 L47 65 L50 85 L53 85 L56 65 L59 85 L65 85 L60 55 L63 70 L59 70 L57 40 C55 38 45 38 46 40 Z',
+        fill: 'rgba(102, 126, 234, 0.12)'
+      })
+    },
+    elder: {
+      render: () => h('path', { 
+        d: 'M50 12 C56 12 62 18 62 25 C62 33 56 39 50 39 C44 39 38 33 38 25 C38 18 44 12 50 12 M45 42 L38 80 L32 80 L36 58 L28 95 L38 95 L42 72 L45 95 L55 95 L58 72 L62 95 L72 95 L64 58 L68 80 L62 80 L55 42 C53 40 47 40 45 42 Z M35 20 L30 15 M65 20 L70 15',
+        fill: 'rgba(118, 75, 162, 0.12)'
+      })
+    }
+  }
+  return silhouettes[type] || silhouettes.man
+}
+
+// 初始化气泡
+const initBubbles = () => {
+  const count = 15
+  for (let i = 0; i < count; i++) {
+    bubbles.value.push({
+      x: Math.random() * 100,
+      duration: 15 + Math.random() * 20,
+      delay: Math.random() * 10,
+      size: 60 + Math.random() * 100,
+      type: bubbleTypes[Math.floor(Math.random() * bubbleTypes.length)]
+    })
+  }
+}
 
 const goHome = () => {
   router.push('/')
@@ -407,6 +476,7 @@ const appealRules: FormRules = {
 }
 
 onMounted(() => {
+  initBubbles()
   if (authStore.user) {
     profileForm.username = authStore.user.username
     profileForm.phone = authStore.user.phone || ''
@@ -610,7 +680,54 @@ function formatDate(date?: string) {
   margin: 0 auto;
   padding: 20px;
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8f9ff 0%, #fff 100%);
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.background-animation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bubble {
+  position: absolute;
+  bottom: -150px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.08));
+  animation: float-up linear infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(102, 126, 234, 0.15);
+}
+
+@keyframes float-up {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(-120vh) scale(0.8);
+    opacity: 0;
+  }
+}
+
+.silhouette {
+  width: 60%;
+  height: 60%;
+  opacity: 0.6;
 }
 
 .profile-header {
@@ -619,6 +736,7 @@ function formatDate(date?: string) {
   gap: 2rem;
   margin-bottom: 24px;
   position: relative;
+  z-index: 1;
 }
 
 .home-btn {
@@ -646,7 +764,7 @@ function formatDate(date?: string) {
 
 .profile-header h1 {
   font-size: 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #a8b4ff 0%, #c49bff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -657,18 +775,22 @@ function formatDate(date?: string) {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .profile-card {
   width: 100%;
   border-radius: 16px;
-  border: 1px solid rgba(102, 126, 234, 0.1);
-  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.08);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  background: rgba(26, 26, 46, 0.8);
+  backdrop-filter: blur(10px);
 }
 
 .profile-card :deep(.el-card__header) {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.05) 100%);
-  border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+  background: rgba(102, 126, 234, 0.15);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.2);
 }
 
 .card-header {
@@ -676,7 +798,7 @@ function formatDate(date?: string) {
   justify-content: space-between;
   align-items: center;
   font-weight: 600;
-  color: #1a1a2e;
+  color: #fff;
 }
 
 .card-header :deep(.el-button--primary) {
@@ -688,6 +810,8 @@ function formatDate(date?: string) {
 .card-header :deep(.el-button--default) {
   border-radius: 8px;
   border-color: rgba(102, 126, 234, 0.3);
+  background: rgba(26, 26, 46, 0.6);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .avatar-section {
@@ -697,25 +821,44 @@ function formatDate(date?: string) {
 }
 
 .avatar-section :deep(.el-avatar) {
-  border: 3px solid rgba(102, 126, 234, 0.3);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+  border: 3px solid rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.profile-card :deep(.el-form-item__label) {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .profile-card :deep(.el-input__wrapper),
 .profile-card :deep(.el-textarea__inner) {
   border-radius: 8px;
-  border: 1px solid rgba(102, 126, 234, 0.2);
+  border: 1px solid rgba(102, 126, 234, 0.3);
   box-shadow: none;
+  background: rgba(26, 26, 46, 0.6);
+}
+
+.profile-card :deep(.el-input__inner) {
+  color: #fff;
+}
+
+.profile-card :deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.profile-card :deep(.el-textarea__inner) {
+  color: #fff;
+  background: rgba(26, 26, 46, 0.6);
 }
 
 .profile-card :deep(.el-input__wrapper:focus-within),
 .profile-card :deep(.el-textarea__inner:focus) {
   border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
 }
 
 .profile-card :deep(.el-select .el-input__wrapper) {
   border-radius: 8px;
+  background: rgba(26, 26, 46, 0.6);
 }
 
 .profile-card :deep(.el-tag) {
@@ -723,9 +866,60 @@ function formatDate(date?: string) {
 }
 
 .profile-card :deep(.el-tag--success) {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.1) 100%);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.2) 100%);
+  border-color: rgba(102, 126, 234, 0.4);
+  color: #a8b4ff;
+}
+
+.profile-card :deep(.el-tag--danger) {
+  background: linear-gradient(135deg, rgba(234, 102, 102, 0.3) 0%, rgba(162, 75, 75, 0.2) 100%);
+  border-color: rgba(234, 102, 102, 0.4);
+  color: #ffb4b4;
+}
+
+.profile-card :deep(.el-tag--warning) {
+  background: linear-gradient(135deg, rgba(234, 182, 102, 0.3) 0%, rgba(162, 118, 75, 0.2) 100%);
+  border-color: rgba(234, 182, 102, 0.4);
+  color: #ffd4a8;
+}
+
+.profile-card :deep(.el-tag--info) {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.15) 100%);
   border-color: rgba(102, 126, 234, 0.3);
-  color: #667eea;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.profile-card :deep(.el-table) {
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: rgba(102, 126, 234, 0.15);
+  --el-table-row-hover-bg-color: rgba(102, 126, 234, 0.1);
+  --el-table-text-color: rgba(255, 255, 255, 0.8);
+  --el-table-header-text-color: rgba(255, 255, 255, 0.9);
+  --el-table-border-color: rgba(102, 126, 234, 0.2);
+}
+
+.profile-card :deep(.el-table th.el-table__cell) {
+  background: rgba(102, 126, 234, 0.15);
+}
+
+.profile-card :deep(.el-button--warning) {
+  background: linear-gradient(135deg, #e6a23c 0%, #d48a1e 100%);
+  border: none;
+}
+
+.profile-card :deep(.el-button--info) {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.6) 0%, rgba(118, 75, 162, 0.6) 100%);
+  border: none;
+}
+
+.profile-card :deep(.el-button--danger) {
+  background: linear-gradient(135deg, #f56c6c 0%, #c45656 100%);
+  border: none;
+}
+
+.profile-card :deep(.el-button + .el-button) {
+  margin-left: 12px;
 }
 
 .appeal-detail {
@@ -734,28 +928,46 @@ function formatDate(date?: string) {
     
     .label {
       font-weight: bold;
-      color: #1a1a2e;
+      color: rgba(255, 255, 255, 0.9);
     }
     
     .description {
       margin: 8px 0 0 0;
       padding: 12px;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.03) 100%);
+      background: rgba(102, 126, 234, 0.1);
       border-radius: 8px;
-      color: #606266;
+      color: rgba(255, 255, 255, 0.7);
       line-height: 1.6;
-      border: 1px solid rgba(102, 126, 234, 0.1);
+      border: 1px solid rgba(102, 126, 234, 0.2);
     }
     
     .admin-response {
       margin: 8px 0 0 0;
       padding: 12px;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
+      background: rgba(102, 126, 234, 0.15);
       border-radius: 8px;
-      color: #667eea;
+      color: #a8b4ff;
       line-height: 1.6;
-      border: 1px solid rgba(102, 126, 234, 0.2);
+      border: 1px solid rgba(102, 126, 234, 0.3);
     }
   }
+}
+
+:deep(.el-dialog) {
+  background: rgba(26, 26, 46, 0.95);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  border-radius: 16px;
+}
+
+:deep(.el-dialog__title) {
+  color: #fff;
+}
+
+:deep(.el-dialog__body) {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+:deep(.el-dialog__footer) {
+  border-top: 1px solid rgba(102, 126, 234, 0.2);
 }
 </style>

@@ -723,11 +723,23 @@ const initScene = () => {
   // 响应窗口大小变化
   const handleResize = () => {
     if (!previewContainer.value) return
-    camera.aspect = previewContainer.value.clientWidth / previewContainer.value.clientHeight
-    camera.updateProjectionMatrix()
-    renderer.setSize(previewContainer.value.clientWidth, previewContainer.value.clientHeight)
+    const width = previewContainer.value.clientWidth
+    const height = previewContainer.value.clientHeight
+    if (width > 0 && height > 0) {
+      camera.aspect = width / height
+      camera.updateProjectionMatrix()
+      renderer.setSize(width, height)
+    }
   }
   window.addEventListener('resize', handleResize)
+  
+  // 使用ResizeObserver监听容器大小变化（侧边栏伸缩时触发）
+  const resizeObserver = new ResizeObserver(() => {
+    handleResize()
+  })
+  if (previewContainer.value) {
+    resizeObserver.observe(previewContainer.value)
+  }
 }
 
 // 加载默认模型

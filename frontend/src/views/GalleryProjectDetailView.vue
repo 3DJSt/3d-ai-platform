@@ -1,12 +1,32 @@
 <template>
   <div class="gallery-project-detail-view">
+    <!-- 背景动画 -->
+    <div class="background-animation">
+      <div 
+        v-for="(bubble, index) in bubbles" 
+        :key="index"
+        class="bubble"
+        :style="{
+          left: bubble.x + '%',
+          animationDuration: bubble.duration + 's',
+          animationDelay: bubble.delay + 's',
+          width: bubble.size + 'px',
+          height: bubble.size + 'px'
+        }"
+      >
+        <svg viewBox="0 0 100 100" class="silhouette" :class="bubble.type">
+          <component :is="getSilhouette(bubble.type)" />
+        </svg>
+      </div>
+    </div>
+
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-buttons">
-        <el-button type="primary" plain @click="goHome">
+        <el-button @click="goHome">
           <el-icon><House /></el-icon>返回主页
         </el-button>
-        <el-button type="primary" plain @click="goBack">
+        <el-button @click="goBack">
           <el-icon><ArrowLeft /></el-icon>返回画廊
         </el-button>
       </div>
@@ -124,7 +144,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, h } from 'vue'
 import { ArrowLeft, Star, Collection, Download, House } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
@@ -137,6 +157,55 @@ const router = useRouter()
 const route = useRoute()
 const galleryStore = useGalleryStore()
 const authStore = useAuthStore()
+
+// 背景动画气泡
+const bubbles = ref<Array<{x: number; duration: number; delay: number; size: number; type: string}>>([])
+const bubbleTypes = ['man', 'woman', 'child', 'elder']
+
+// 获取剪影SVG组件
+const getSilhouette = (type: string) => {
+  const silhouettes: Record<string, any> = {
+    man: {
+      render: () => h('path', { 
+        d: 'M50 15 C55 15 60 20 60 25 C60 32 55 37 50 37 C45 37 40 32 40 25 C40 20 45 15 50 15 M45 40 L40 75 L35 75 L38 55 L30 90 L38 90 L42 70 L45 90 L55 90 L58 70 L62 90 L70 90 L62 55 L65 75 L60 75 L55 40 C53 38 47 38 45 40 Z',
+        fill: 'rgba(102, 126, 234, 0.15)'
+      })
+    },
+    woman: {
+      render: () => h('path', { 
+        d: 'M50 15 C55 15 60 20 60 25 C60 32 55 37 50 37 C45 37 40 32 40 25 C40 20 45 15 50 15 M45 40 L42 55 L35 55 L40 40 M55 40 L58 55 L65 55 L60 40 M43 40 L40 90 L45 90 L48 60 L50 75 L52 60 L55 90 L60 90 L57 40 C55 38 45 38 43 40 Z',
+        fill: 'rgba(118, 75, 162, 0.15)'
+      })
+    },
+    child: {
+      render: () => h('path', { 
+        d: 'M50 20 C54 20 58 24 58 28 C58 33 54 37 50 37 C46 37 42 33 42 28 C42 24 46 20 50 20 M46 40 L44 70 L40 70 L43 55 L38 85 L44 85 L47 65 L50 85 L53 85 L56 65 L59 85 L65 85 L60 55 L63 70 L59 70 L57 40 C55 38 45 38 46 40 Z',
+        fill: 'rgba(102, 126, 234, 0.12)'
+      })
+    },
+    elder: {
+      render: () => h('path', { 
+        d: 'M50 12 C56 12 62 18 62 25 C62 33 56 39 50 39 C44 39 38 33 38 25 C38 18 44 12 50 12 M45 42 L38 80 L32 80 L36 58 L28 95 L38 95 L42 72 L45 95 L55 95 L58 72 L62 95 L72 95 L64 58 L68 80 L62 80 L55 42 C53 40 47 40 45 42 Z M35 20 L30 15 M65 20 L70 15',
+        fill: 'rgba(118, 75, 162, 0.12)'
+      })
+    }
+  }
+  return silhouettes[type] || silhouettes.man
+}
+
+// 初始化气泡
+const initBubbles = () => {
+  const count = 15
+  for (let i = 0; i < count; i++) {
+    bubbles.value.push({
+      x: Math.random() * 100,
+      duration: 15 + Math.random() * 20,
+      delay: Math.random() * 10,
+      size: 60 + Math.random() * 100,
+      type: bubbleTypes[Math.floor(Math.random() * bubbleTypes.length)]
+    })
+  }
+}
 
 // 状态
 const loading = ref(true)
@@ -303,6 +372,7 @@ watch(() => route.params.id, () => {
 
 // 页面加载时获取数据
 onMounted(() => {
+  initBubbles()
   loadProjectDetail()
 })
 </script>
@@ -312,6 +382,55 @@ onMounted(() => {
   padding: 24px;
   max-width: 1200px;
   margin: 0 auto;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.background-animation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bubble {
+  position: absolute;
+  bottom: -150px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.08));
+  animation: float-up linear infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(102, 126, 234, 0.15);
+}
+
+@keyframes float-up {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(-120vh) scale(0.8);
+    opacity: 0;
+  }
+}
+
+.silhouette {
+  width: 60%;
+  height: 60%;
+  opacity: 0.6;
 }
 
 .page-header {
@@ -319,25 +438,49 @@ onMounted(() => {
   align-items: center;
   gap: 24px;
   margin-bottom: 32px;
+  position: relative;
+  z-index: 1;
 
   .header-buttons {
     display: flex;
     gap: 12px;
+
+    .el-button {
+      background: rgba(26, 26, 46, 0.8);
+      border: 1px solid rgba(102, 126, 234, 0.3);
+      color: rgba(255, 255, 255, 0.8);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+
+      &:hover {
+        background: rgba(102, 126, 234, 0.3);
+        border-color: #667eea;
+        color: #a8b4ff;
+      }
+    }
   }
 
   .page-title {
     margin: 0;
     font-size: 24px;
     font-weight: 600;
-    color: #303133;
+    background: linear-gradient(135deg, #a8b4ff 0%, #c49bff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }
 
 .project-detail {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  background: rgba(26, 26, 46, 0.8);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   padding: 24px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  backdrop-filter: blur(10px);
+  position: relative;
+  z-index: 1;
 }
 
 .project-info {
@@ -347,19 +490,19 @@ onMounted(() => {
     align-items: center;
     margin-bottom: 24px;
     padding-bottom: 24px;
-    border-bottom: 1px solid #ebeef5;
+    border-bottom: 1px solid rgba(102, 126, 234, 0.2);
 
     .project-meta {
       display: flex;
       gap: 24px;
       font-size: 14px;
-      color: #909399;
+      color: rgba(255, 255, 255, 0.7);
 
       .project-author {
         font-weight: 500;
 
         .author-name {
-          color: #409eff;
+          color: #a8b4ff;
           cursor: pointer;
           &:hover {
             text-decoration: underline;
@@ -381,14 +524,14 @@ onMounted(() => {
       margin: 0 0 16px;
       font-size: 18px;
       font-weight: 600;
-      color: #303133;
+      color: #fff;
     }
 
     p {
       margin: 0;
       font-size: 14px;
       line-height: 1.6;
-      color: #606266;
+      color: rgba(255, 255, 255, 0.7);
     }
   }
 
@@ -399,15 +542,16 @@ onMounted(() => {
       margin: 0 0 16px;
       font-size: 18px;
       font-weight: 600;
-      color: #303133;
+      color: #fff;
     }
 
     .preview-container {
       width: 100%;
       height: 400px;
-      background: #f5f7fa;
-      border-radius: 8px;
+      background: rgba(15, 52, 96, 0.5);
+      border-radius: 12px;
       overflow: hidden;
+      border: 1px solid rgba(102, 126, 234, 0.2);
     }
   }
 
@@ -416,7 +560,7 @@ onMounted(() => {
       margin: 0 0 24px;
       font-size: 18px;
       font-weight: 600;
-      color: #303133;
+      color: #fff;
     }
 
     .comment-form {
@@ -424,6 +568,21 @@ onMounted(() => {
       display: flex;
       flex-direction: column;
       gap: 12px;
+
+      :deep(.el-textarea__inner) {
+        background: rgba(26, 26, 46, 0.6);
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        color: #fff;
+        border-radius: 8px;
+      }
+
+      :deep(.el-textarea__inner::placeholder) {
+        color: rgba(255, 255, 255, 0.4);
+      }
+
+      :deep(.el-textarea__inner:focus) {
+        border-color: #667eea;
+      }
 
       .el-button {
         align-self: flex-end;
@@ -434,13 +593,13 @@ onMounted(() => {
       .no-comments {
         text-align: center;
         padding: 48px 0;
-        color: #909399;
+        color: rgba(255, 255, 255, 0.6);
         font-size: 14px;
       }
 
       .comment-item {
         padding: 16px 0;
-        border-bottom: 1px solid #ebeef5;
+        border-bottom: 1px solid rgba(102, 126, 234, 0.2);
 
         &:last-child {
           border-bottom: none;
@@ -454,7 +613,7 @@ onMounted(() => {
 
           .comment-author {
             font-weight: 500;
-            color: #303133;
+            color: #fff;
           }
 
           .comment-actions {
@@ -463,7 +622,7 @@ onMounted(() => {
             gap: 12px;
 
             .comment-date {
-              color: #909399;
+              color: rgba(255, 255, 255, 0.5);
             }
 
             .delete-button {
@@ -478,7 +637,7 @@ onMounted(() => {
         .comment-content {
           font-size: 14px;
           line-height: 1.6;
-          color: #606266;
+          color: rgba(255, 255, 255, 0.7);
         }
       }
     }
@@ -492,5 +651,31 @@ onMounted(() => {
   .el-button {
     margin-top: 24px;
   }
+}
+
+:deep(.el-button--default) {
+  background: rgba(26, 26, 46, 0.6);
+  border-color: rgba(102, 126, 234, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+:deep(.el-button--default:hover) {
+  background: rgba(102, 126, 234, 0.3);
+  border-color: #667eea;
+  color: #a8b4ff;
+}
+
+:deep(.el-button--primary) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+:deep(.el-button--success) {
+  background: linear-gradient(135deg, #67c23a 0%, #5daf34 100%);
+  border: none;
+}
+
+:deep(.el-empty__description p) {
+  color: rgba(255, 255, 255, 0.7);
 }
 </style>
